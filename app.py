@@ -19,7 +19,7 @@ def quote(symbol):
         url,
         params={
             "symbol": symbol.upper(),
-            "token": API_KEY
+            "token": Key_api
         }
     )
 
