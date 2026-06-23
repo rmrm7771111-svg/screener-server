@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 import requests
 import os
 
@@ -19,7 +19,7 @@ def quote(symbol):
         url,
         params={
             "symbol": symbol.upper(),
-            "token": Key_api
+            "token": API_KEY
         }
     )
 
