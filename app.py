@@ -3,8 +3,7 @@ import requests
 import os
 import threading
 import time
-from datetime import datetime, time as dtime
-import pytz
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -20,29 +19,16 @@ def send(msg):
         json={"chat_id": CHAT_ID, "text": msg}
     )
 
-def get_all_symbols():
-    url = "https://finnhub.io/api/v1/stock/symbol"
-    r = requests.get(url, params={
-        "exchange": "US",
-        "token": API_KEY
-    })
-    data = r.json()
+def get(symbol):
+    return requests.get(
+        "https://finnhub.io/api/v1/quote",
+        params={"symbol": symbol, "token": API_KEY}
+    ).json()
 
-    return [x["symbol"] for x in data if "symbol" in x]
-
-SYMBOLS = get_all_symbols()
-
-def get_quote(symbol):
-    url = "https://finnhub.io/api/v1/quote"
-    return requests.get(url, params={
-        "symbol": symbol,
-        "token": API_KEY
-    }).json()
-
+# تشغيل 4AM - 8PM (يشمل pre + market + after)
 def market_open():
-    tz = pytz.timezone("US/Eastern")
-    now = datetime.now(tz).time()
-    return dtime(4, 0) <= now <= dtime(20, 0)
+    hour = (datetime.utcnow().hour - 4) % 24
+    return 4 <= hour <= 20
 
 def scan():
     global last_alert
@@ -50,9 +36,17 @@ def scan():
     if not market_open():
         return
 
-    for s in SYMBOLS:
+    symbols_url = "https://finnhub.io/api/v1/stock/symbol"
+    r = requests.get(symbols_url, params={
+        "exchange": "US",
+        "token": API_KEY
+    })
+
+    symbols = [x["symbol"] for x in r.json() if "symbol" in x]
+
+    for s in symbols:
         try:
-            d = get_quote(s)
+            d = get(s)
 
             price = d.get("c", 0)
             prev = d.get("pc", 0)
@@ -86,6 +80,6 @@ def loop():
 
 @app.route("/")
 def home():
-    return {"status": "FULL MARKET SCANNER ACTIVE"}
+    return {"status": "FULL MARKET SCANNER RUNNING"}
 
 threading.Thread(target=loop, daemon=True).start()
