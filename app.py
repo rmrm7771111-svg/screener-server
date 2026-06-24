@@ -4,8 +4,8 @@ import requests
 # =====================
 # CONFIG
 # =====================
-TELEGRAM_TOKEN = "YOUR_TOKEN"
-CHAT_ID = "YOUR_CHAT_ID"
+TELEGRAM_TOKEN = "PUT_YOUR_TOKEN_HERE"
+CHAT_ID = "PUT_YOUR_CHAT_ID_HERE"
 
 last_alert = {}
 
@@ -14,20 +14,26 @@ last_alert = {}
 # =====================
 def send(msg):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
+    try:
+        requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
+    except:
+        pass
 
 # =====================
-# MARKET STATUS (placeholder)
+# MARKET CHECK (placeholder)
 # =====================
 def market_open():
     return True
 
 # =====================
-# DATA SOURCES (بدلها بـ API الحقيقي)
+# SYMBOLS
 # =====================
 def get_symbols():
     return ["AAPL", "TSLA", "AMC", "NVDA", "GME"]
 
+# =====================
+# QUOTE DATA (replace with real API)
+# =====================
 def get_quote(symbol):
     return {
         "c": 10,
@@ -36,19 +42,19 @@ def get_quote(symbol):
         "v": 2000000
     }
 
+# =====================
+# PROFILE DATA (FLOAT)
+# =====================
 def get_profile(symbol):
     return {
         "shareOutstanding": 50000000
     }
 
 # =====================
-# SCANNER CORE
+# SCANNER
 # =====================
 def scan():
     global last_alert
-
-    if not market_open():
-        return
 
     symbols = get_symbols()
 
@@ -71,7 +77,7 @@ def scan():
                 continue
 
             # =====================
-            # MOVEMENT
+            # MOVES
             # =====================
             momentum = ((price - open_price) / open_price) * 100
             gap = ((open_price - prev_close) / prev_close) * 100
@@ -80,11 +86,10 @@ def scan():
             # =====================
             # VOLUME PRESSURE
             # =====================
-            avg_volume = volume if volume > 0 else 1
-            vol_pressure = volume / avg_volume
+            vol_pressure = volume / (volume if volume > 0 else 1)
 
             # =====================
-            # SCORE (simple)
+            # SCORE
             # =====================
             score = (
                 momentum * 0.3 +
@@ -154,6 +159,7 @@ def scan():
 # LOOP
 # =====================
 def loop():
+    print("Scanner running...")
     while True:
         scan()
         time.sleep(60)
