@@ -10,7 +10,7 @@ CHAT_ID = "PUT_YOUR_CHAT_ID_HERE"
 last_alert = {}
 
 # =====================
-# TELEGRAM
+# TELEGRAM SEND
 # =====================
 def send(msg):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -20,38 +20,35 @@ def send(msg):
         pass
 
 # =====================
-# MARKET CHECK (placeholder)
+# MARKET STATUS
 # =====================
 def market_open():
     return True
 
 # =====================
-# SYMBOLS
+# SYMBOL LIST
 # =====================
 def get_symbols():
     return ["AAPL", "TSLA", "AMC", "NVDA", "GME"]
 
 # =====================
-# QUOTE DATA (replace with real API)
+# MARKET DATA (replace later with real API)
 # =====================
 def get_quote(symbol):
     return {
         "c": 10,
         "o": 9,
         "pc": 9.5,
-        "v": 2000000
+        "v": 2500000
     }
 
-# =====================
-# PROFILE DATA (FLOAT)
-# =====================
 def get_profile(symbol):
     return {
         "shareOutstanding": 50000000
     }
 
 # =====================
-# SCANNER
+# SCANNER ENGINE
 # =====================
 def scan():
     global last_alert
@@ -77,7 +74,7 @@ def scan():
                 continue
 
             # =====================
-            # MOVES
+            # PRICE ACTION
             # =====================
             momentum = ((price - open_price) / open_price) * 100
             gap = ((open_price - prev_close) / prev_close) * 100
@@ -89,7 +86,7 @@ def scan():
             vol_pressure = volume / (volume if volume > 0 else 1)
 
             # =====================
-            # SCORE
+            # SCORE ENGINE
             # =====================
             score = (
                 momentum * 0.3 +
@@ -103,7 +100,7 @@ def scan():
                 continue
 
             # =====================
-            # BREAKOUT
+            # BREAKOUT SIGNAL
             # =====================
             if momentum >= 5 and vol_pressure >= 2 and score >= 15:
 
@@ -121,7 +118,7 @@ def scan():
                 )
 
             # =====================
-            # GAP
+            # GAP SIGNAL
             # =====================
             elif gap >= 4:
 
@@ -137,7 +134,7 @@ def scan():
                 )
 
             # =====================
-            # SPIKE
+            # SPIKE SIGNAL
             # =====================
             elif spike >= 8:
 
@@ -156,10 +153,11 @@ def scan():
             continue
 
 # =====================
-# LOOP
+# MAIN LOOP
 # =====================
-def loop():
+def main():
     print("Scanner running...")
+
     while True:
         scan()
         time.sleep(60)
@@ -168,4 +166,4 @@ def loop():
 # START
 # =====================
 if __name__ == "__main__":
-    loop()
+    main()
