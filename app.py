@@ -1,45 +1,64 @@
+from flask import Flask
+import threading
 import time
 import requests
+import os
+
+app = Flask(__name__)
 
 # =====================
-# CONFIG
+# ENV VARIABLES
 # =====================
-TELEGRAM_TOKEN = "PUT_YOUR_TOKEN_HERE"
-CHAT_ID = "PUT_YOUR_CHAT_ID_HERE"
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 last_alert = {}
 
 # =====================
-# TELEGRAM SEND
+# WEB ENDPOINT
+# =====================
+@app.route("/")
+def home():
+    return "Scanner is running"
+
+# =====================
+# TELEGRAM
 # =====================
 def send(msg):
+    if not TELEGRAM_TOKEN or not CHAT_ID:
+        print("Missing TELEGRAM_TOKEN or CHAT_ID")
+        return
+
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+
     try:
-        requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
-    except:
-        pass
+        requests.post(
+            url,
+            data={
+                "chat_id": CHAT_ID,
+                "text": msg
+            },
+            timeout=10
+        )
+    except Exception as e:
+        print(e)
 
 # =====================
-# MARKET STATUS
-# =====================
-def market_open():
-    return True
-
-# =====================
-# SYMBOL LIST
+# SYMBOLS
 # =====================
 def get_symbols():
     return ["AAPL", "TSLA", "AMC", "NVDA", "GME"]
 
 # =====================
-# MARKET DATA (replace later with real API)
+# MARKET DATA
+# استبدلها لاحقاً بالـ API الحقيقي
 # =====================
 def get_quote(symbol):
     return {
         "c": 10,
         "o": 9,
         "pc": 9.5,
-        "v": 2500000
+        "v": 2000000
     }
 
 def get_profile(symbol):
@@ -48,7 +67,7 @@ def get_profile(symbol):
     }
 
 # =====================
-# SCANNER ENGINE
+# SCANNER
 # =====================
 def scan():
     global last_alert
@@ -64,7 +83,6 @@ def scan():
             open_price = q.get("o", 0)
             prev_close = q.get("pc", 0)
             volume = q.get("v", 0)
-
             float_shares = p.get("shareOutstanding", 0)
 
             if price < 0.30:
@@ -73,21 +91,13 @@ def scan():
             if open_price == 0 or prev_close == 0:
                 continue
 
-            # =====================
-            # PRICE ACTION
-            # =====================
             momentum = ((price - open_price) / open_price) * 100
             gap = ((open_price - prev_close) / prev_close) * 100
             spike = ((price - prev_close) / prev_close) * 100
 
-            # =====================
-            # VOLUME PRESSURE
-            # =====================
-            vol_pressure = volume / (volume if volume > 0 else 1)
+            # مؤقت إلى أن تضيف API حقيقي
+            vol_pressure = 2
 
-            # =====================
-            # SCORE ENGINE
-            # =====================
             score = (
                 momentum * 0.3 +
                 vol_pressure * 10 +
@@ -99,10 +109,8 @@ def scan():
             if s in last_alert and now - last_alert[s] < 300:
                 continue
 
-            # =====================
-            # BREAKOUT SIGNAL
-            # =====================
-            if momentum >= 5 and vol_pressure >= 2 and score >= 15:
+            # BREAKOUT
+            if momentum >= 5 and score >= 15:
 
                 last_alert[s] = now
 
@@ -117,9 +125,7 @@ def scan():
                     f"Score: {round(score,2)}"
                 )
 
-            # =====================
-            # GAP SIGNAL
-            # =====================
+            # GAP
             elif gap >= 4:
 
                 last_alert[s] = now
@@ -129,13 +135,10 @@ def scan():
                     f"{s}\n"
                     f"Gap: {round(gap,2)}%\n"
                     f"Volume: {volume}\n"
-                    f"Float: {float_shares}\n"
-                    f"RVOL: {round(vol_pressure,2)}"
+                    f"Float: {float_shares}"
                 )
 
-            # =====================
-            # SPIKE SIGNAL
-            # =====================
+            # SPIKE
             elif spike >= 8:
 
                 last_alert[s] = now
@@ -145,25 +148,24 @@ def scan():
                     f"{s}\n"
                     f"Move: {round(spike,2)}%\n"
                     f"Volume: {volume}\n"
-                    f"Float: {float_shares}\n"
-                    f"RVOL: {round(vol_pressure,2)}"
+                    f"Float: {float_shares}"
                 )
 
-        except:
-            continue
+        except Exception as e:
+            print(e)
 
 # =====================
-# MAIN LOOP
+# LOOP
 # =====================
-def main():
-    print("Scanner running...")
-
+def scanner_loop():
     while True:
         scan()
         time.sleep(60)
 
 # =====================
-# START
+# START BACKGROUND THREAD
 # =====================
-if __name__ == "__main__":
-    main()
+threading.Thread(
+    target=scanner_loop,
+    daemon=True
+).start()
